@@ -287,7 +287,7 @@
       resources: {}
       runPolicy: Serial
       source:
-        contextDir: datapusher
+        contextDir: pusher
         git:
           ref: master
           uri: 'https://github.com/mvilche/datapusher-openshift.git'
@@ -445,6 +445,98 @@
 
 
 ###### FIN postgresql
+
+
+########## redis
+  - apiVersion: v1
+    kind: DeploymentConfig
+    metadata:
+      labels:
+        app: "redis"
+      name: "redis"
+    spec:
+      replicas: 1
+      revisionHistoryLimit: 10
+      selector:
+        app: redis
+        deploymentconfig: redis
+      strategy:
+        activeDeadlineSeconds: 21600
+        resources: {}
+        rollingParams:
+          intervalSeconds: 1
+          maxSurge: 25%
+          maxUnavailable: 25%
+          timeoutSeconds: 600
+          updatePeriodSeconds: 1
+        type: Rolling
+      template:
+        metadata:
+          labels:
+            app: redis
+            deploymentconfig: redis
+        spec:
+          containers:
+            - image: "redis:5.0.5"
+              imagePullPolicy: Always
+              name: redis
+              ports:
+                - containerPort: 6379
+                  protocol: TCP
+              resources:
+                limits:
+                  memory: 128Mi
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          terminationGracePeriodSeconds: 30
+      test: false
+      triggers:
+        - type: ConfigChange
+        - imageChangeParams:
+            automatic: true
+            containerNames:
+              - redis
+            from:
+              kind: ImageStreamTag
+              name: "redis:5.0.5"
+          type: ImageChange
+
+
+
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+        app: redis
+      name: redis
+    spec:
+      ports:
+        - name: http
+          port: 6379
+          protocol: TCP
+          targetPort: 6379
+      selector:
+        app: redis
+        deploymentconfig: redis
+      sessionAffinity: None
+      type: ClusterIP
+
+
+  - apiVersion: v1
+    kind: ImageStream
+    metadata:
+        name: nexus
+    spec:
+        tags:
+          - name: 5.0.5
+            from:
+                kind: DockerImage
+                name: redis:5.0.5
+
+########## FIN redis
 
 
 ########## solr
