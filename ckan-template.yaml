@@ -55,21 +55,21 @@
             - env:
                 - name: POSTGRES_HOST
                   value: postgres
-                  name: POSTGRES_PORT
+                - name: POSTGRES_PORT
                   value: '5432'
-                  name: POSTGRES_USER
+                - name: POSTGRES_USER
                   value: ckan
-                  name: POSTGRES_PASSWORD
+                - name: POSTGRES_PASSWORD
                   value: ckan
-                  name: TIMEZONE
+                - name: TIMEZONE
                   value: America/Montevideo
-                  name: CKAN_URL
+                - name: CKAN_URL
                   value: http://localhost:8080
-                  name: CKAN_REDIS_URL
+                - name: CKAN_REDIS_URL
                   value: redis://redis:6379/0
-                  name: CKAN_SOLR_URL
+                - name: CKAN_SOLR_URL
                   value: http://solr:8983/solr/ckan
-                  name: CKAN_DATAPUSHER_URL
+                - name: CKAN_DATAPUSHER_URL
                   value: http://datapusher:8800
               image: "ckan:latest"
               imagePullPolicy: Always
@@ -77,24 +77,6 @@
               ports:
                 - containerPort: 5000
                   protocol: TCP
-              livenessProbe:
-                failureThreshold: 3
-                initialDelaySeconds: 60
-                periodSeconds: 20
-                successThreshold: 1
-                httpGet:
-                  port: 5000
-                  path: /
-                timeoutSeconds: 15
-              readinessProbe:
-                failureThreshold: 3
-                initialDelaySeconds: 60
-                periodSeconds: 20
-                successThreshold: 1
-                httpGet:
-                  port: 5000
-                  path: /
-                timeoutSeconds: 15
               resources:
                 requests:
                   cpu: 500m
@@ -246,6 +228,7 @@
               ports:
                 - containerPort: 8800
                   protocol: TCP
+              resources:
                 limits:
                   cpu: 1
                   memory: 256Mi

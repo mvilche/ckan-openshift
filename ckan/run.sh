@@ -42,7 +42,10 @@ else
     echo "EL TIEMPO DE LA DESCARGA E INSTALACION DE LAS DEPENDENCIAS SERA DE UNOS MINUTOS"
     echo "INICIALIZANDO..."
     echo "*******************************************************"
-    mkdir /opt/src/ckan/config
+
+    if [ ! -d /opt/src/ckan/config ]; then
+    mkdir -p /opt/src/ckan/config
+    fi
     paster make-config ckan /opt/src/ckan/config/production.ini && \
     sed -i "/sqlalchemy.url/c\sqlalchemy.url = postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST/\ckan" /opt/src/ckan/config/production.ini && \
     sed -i "/ckan.site_url/c\ckan.site_url=$CKAN_URL" /opt/src/ckan/config/production.ini && \
@@ -74,7 +77,7 @@ echo "********************************************"
     echo "*******************************************************"
 	echo "TAREAS COMPLETADAS CORRECTAMENTE." && \
     echo "*******************************************************" && \
-    mkdir /opt/src/ckan/config/.init
+    mkdir -p /opt/src/ckan/config/.init
 fi
 
 
