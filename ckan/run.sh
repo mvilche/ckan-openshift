@@ -2,7 +2,7 @@
 set -e
 
 CKAN_ROOT=/opt/src/ckan
-CKAN_DATADIR=/opt/src/ckan/config/.init
+CKAN_DATADIR=/opt/src/ckan/data/.nodelete
 CKAN_VERSION=ckan-2.8.2
 CKAN_REPO=https://github.com/ckan/ckan.git
 
@@ -39,23 +39,10 @@ else
 
     echo "***************************************************"
     echo "CKAN NO SE HA INICIALIZADO"
-    echo "EL TIEMPO DE LA DESCARGA E INSTALACION DE LAS DEPENDENCIAS SERA DE UNOS MINUTOS"
+    echo "EL TIEMPO DE LA INSTALACION SERA DE UNOS MINUTOS"
     echo "INICIALIZANDO..."
     echo "*******************************************************"
 
-    if [ ! -d /opt/src/ckan/config ]; then
-    mkdir -p /opt/src/ckan/config
-    fi
-    paster make-config ckan /opt/src/ckan/config/production.ini && \
-    sed -i "/sqlalchemy.url/c\sqlalchemy.url = postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST/\ckan" /opt/src/ckan/config/production.ini && \
-    sed -i "/ckan.site_url/c\ckan.site_url=http://$CKAN_URL" /opt/src/ckan/config/production.ini && \
-    sed -i "/ckan.storage_path/c\ckan.storage_path=/opt/src/ckan/data" /opt/src/ckan/config/production.ini && \
-    sed -i "/ckan.redis.url/c\ckan.redis.url=$CKAN_REDIS_URL" /opt/src/ckan/config/production.ini && \
-    sed -i "/solr_url/c\solr_url=$CKAN_SOLR_URL" /opt/src/ckan/config/production.ini && \
-    sed -i "/ckan.datapusher.url/c\ckan.datapusher.url=$CKAN_DATAPUSHER_URL" /opt/src/ckan/config/production.ini && \
-    cp /opt/src/ckan/who.ini /opt/src/ckan/config/ || exit 1
-
-    echo "INICIALIZANDO BASE DE DATOS..." && \
     paster db init -c /opt/src/ckan/config/production.ini && \
     echo "CREANDO USUARIO ADMIN" && \
     paster --plugin=ckan user add admin  email=admin@admin.com password=adminadmin --config=/opt/src/ckan/config/production.ini && \
@@ -77,7 +64,7 @@ echo "********************************************"
     echo "*******************************************************"
 	echo "TAREAS COMPLETADAS CORRECTAMENTE." && \
     echo "*******************************************************" && \
-    mkdir -p /opt/src/ckan/config/.init
+    mkdir -p /opt/src/ckan/data/.nodelete
 fi
 
 

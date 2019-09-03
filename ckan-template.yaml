@@ -104,7 +104,10 @@
               volumeMounts:
                 - mountPath: /opt/src/ckan/config
                   name: ckan-data-1
-                  subPath: ckan
+                  subPath: ckan/config
+                - mountPath: /opt/src/ckan/config
+                  name: ckan-data-1
+                  subPath: ckan/cdata
           dnsPolicy: ClusterFirst
           restartPolicy: Always
           schedulerName: default-scheduler
@@ -113,6 +116,15 @@
             - name: ckan-data-1
               persistentVolumeClaim:
                 claimName: ckan-data
+            - configMap:
+                defaultMode: 420
+                items:
+                  - key: production.ini
+                    path: production.ini
+                  - key: who.ini
+                    path: who.ini
+                name: ckan-configfiles
+              name: ckan-config
       test: false
       triggers:
         - type: ConfigChange
@@ -716,7 +728,55 @@
         requests:
           storage: 20Gi
 
-########################3
+########################
+
+
+
+###########################
+
+  - apiVersion: v1
+    data:
+      production.ini: "#\n# CKAN - Pylons configuration\n#\n# These are some of the configuration options available for your CKAN\n# instance. Check the documentation in 'doc/configuration.rst' or at the\n# following URL for a description of what they do and the full list of\n# available options:\n#\n# http://docs.ckan.org/en/latest/maintaining/configuration.html\n#\n# The %(here)s variable will be replaced with the parent directory of this file\n#\n\n[DEFAULT]\n\n# WARNING: *THIS SETTING MUST BE SET TO FALSE ON A PUBLIC ENVIRONMENT*\n# With debug mode enabled, a visitor to your site could execute malicious commands.\ndebug = false\n\n[server:main]\nuse = egg:Paste#http\nhost = 0.0.0.0\nport = 5000\n\n[app:main]\nuse = egg:ckan\nfull_stack = true\ncache_dir = /tmp/%(ckan.site_id)s/\nbeaker.session.key = ckan\n\n# This is the secret token that the beaker library uses to hash the cookie sent\n# to the client. `paster make-config` generates a unique value for this each\n# time it generates a config file.\nbeaker.session.secret = jw6jYeUMrEynFlRtn8VQZqKAn\n\n# `paster make-config` generates a unique value for this each time it generates\n# a config file.\napp_instance_uuid = 17d02640-f096-468a-8642-0b7e6e7dab49\n\n# repoze.who config\nwho.config_file = %(here)s/who.ini\nwho.log_level = warning\nwho.log_file = %(cache_dir)s/who_log.ini\n# Session timeout (user logged out after period of inactivity, in seconds).\n# Inactive by default, so the session doesn't expire.\n# who.timeout = 86400\n\n## Database Settings\nsqlalchemy.url = postgresql://ckan:ckan@postgresql/ckan\n\n#ckan.datastore.write_url = postgresql://ckan_default:pass@localhost/datastore_default\n#ckan.datastore.read_url = postgresql://datastore_default:pass@localhost/datastore_default\n\n# PostgreSQL' full-text search parameters\nckan.datastore.default_fts_lang = english\nckan.datastore.default_fts_index_method = gist\n\n\n## Site Settings\n\nckan.site_url=http://ckan-http-ckan.127.0.0.1.nip.io\n#ckan.use_pylons_response_cleanup_middleware = true\n\n## Authorization Settings\n\nckan.auth.anon_create_dataset = false\nckan.auth.create_unowned_dataset = false\nckan.auth.create_dataset_if_not_in_organization = false\nckan.auth.user_create_groups = false\nckan.auth.user_create_organizations = false\nckan.auth.user_delete_groups = true\nckan.auth.user_delete_organizations = true\nckan.auth.create_user_via_api = false\nckan.auth.create_user_via_web = true\nckan.auth.roles_that_cascade_to_sub_groups = admin\nckan.auth.public_user_details = true\nckan.auth.public_activity_stream_detail = true\n\n\n## Search Settings\n\nckan.site_id = default\nsolr_url=http://solr:8983/solr/ckan\n\n\n## Redis Settings\n\n# URL to your Redis instance, including the database to be used.\nckan.redis.url=redis://redis:6379/0\n\n\n## CORS Settings\n\n# If cors.origin_allow_all is true, all origins are allowed.\n# If false, the cors.origin_whitelist is used.\n# ckan.cors.origin_allow_all = true\n# cors.origin_whitelist is a space separated list of allowed domains.\n# ckan.cors.origin_whitelist = http://example1.com http://example2.com\n\n\n## Plugins Settings\n\n# Note: Add ``datastore`` to enable the CKAN DataStore\n#       Add ``datapusher`` to enable DataPusher\n#\t\tAdd ``resource_proxy`` to enable resorce proxying and get around the\n#\t\tsame origin policy\nckan.plugins = stats text_view image_view recline_view\n\n# Define which views should be created by default\n# (plugins must be loaded in ckan.plugins)\nckan.views.default_views = image_view text_view recline_view\n\n# Customize which text formats the text_view plugin will show\n#ckan.preview.json_formats = json\n#ckan.preview.xml_formats = xml rdf rdf+xml owl+xml atom rss\n#ckan.preview.text_formats = text plain text/plain\n\n# Customize which image formats the image_view plugin will show\n#ckan.preview.image_formats = png jpeg jpg gif\n\n## Front-End Settings\n\nckan.site_title = CKAN\nckan.site_logo = /base/images/ckan-logo.png\nckan.site_description =\nckan.favicon = /base/images/ckan.ico\nckan.gravatar_default = identicon\nckan.preview.direct = png jpg gif\nckan.preview.loadable = html htm rdf+xml owl+xml xml n3 n-triples turtle plain atom csv tsv rss txt json\nckan.display_timezone = server\n\n# package_hide_extras = for_search_index_only\n#package_edit_return_url = http://another.frontend/dataset/<NAME>\n#package_new_return_url = http://another.frontend/dataset/<NAME>\n#ckan.recaptcha.publickey =\n#ckan.recaptcha.privatekey =\n#licenses_group_url = http://licenses.opendefinition.org/licenses/groups/ckan.json\n# ckan.template_footer_end =\n\n\n## Internationalisation Settings\nckan.locale_default = en\nckan.locale_order = en pt_BR ja it cs_CZ ca es fr el sv sr sr@latin no sk fi ru de pl nl bg ko_KR hu sa sl lv\nckan.locales_offered =\nckan.locales_filtered_out = en_GB\n\n## Feeds Settings\n\nckan.feeds.authority_name =\nckan.feeds.date =\nckan.feeds.author_name =\nckan.feeds.author_link =\n\n## Storage Settings\n\nckan.storage_path=/opt/src/ckan/data\n#ckan.max_resource_size = 10\n#ckan.max_image_size = 2\n\n## Webassets Settings\n#ckan.webassets.use_x_sendfile = false\n#ckan.webassets.path = /var/lib/ckan/webassets\n\n\n## Datapusher settings\n\n# Make sure you have set up the DataStore\n\n#ckan.datapusher.formats = csv xls xlsx tsv application/csv application/vnd.ms-excel application/vnd.openxmlformats-officedocument.spreadsheetml.sheet\nckan.datapusher.url=http://datapusher:8800\n#ckan.datapusher.assume_task_stale_after = 3600\n\n# Resource Proxy settings\n# Preview size limit, default: 1MB\n#ckan.resource_proxy.max_file_size = 1048576\n# Size of chunks to read/write.\n#ckan.resource_proxy.chunk_size = 4096\n\n## Activity Streams Settings\n\n#ckan.activity_streams_enabled = true\n#ckan.activity_list_limit = 31\n#ckan.activity_streams_email_notifications = true\n#ckan.email_notifications_since = 2 days\nckan.hide_activity_from_users = %(ckan.site_id)s\n\n\n## Email settings\n\n#email_to = errors@example.com\n#error_email_from = ckan-errors@example.com\n#smtp.server = localhost\n#smtp.starttls = False\n#smtp.user = username@example.com\n#smtp.password = your_password\n#smtp.mail_from =\n\n## Background Job Settings\nckan.jobs.timeout = 180\n\n## Logging configuration\n[loggers]\nkeys = root, ckan, ckanext\n\n[handlers]\nkeys = console\n\n[formatters]\nkeys = generic\n\n[logger_root]\nlevel = WARNING\nhandlers = console\n\n[logger_ckan]\nlevel = INFO\nhandlers = console\nqualname = ckan\npropagate = 0\n\n[logger_ckanext]\nlevel = DEBUG\nhandlers = console\nqualname = ckanext\npropagate = 0\n\n[handler_console]\nclass = StreamHandler\nargs = (sys.stderr,)\nlevel = NOTSET\nformatter = generic\n\n[formatter_generic]\nformat = %(asctime)s %(levelname)-5.5s [%(name)s] %(message)s"
+      who.ini: |-
+        [plugin:auth_tkt]
+        use = ckan.lib.repoze_plugins.auth_tkt:make_plugin
+        # If no secret key is defined here, beaker.session.secret will be used
+        #secret = somesecret
+
+        [plugin:friendlyform]
+        use = ckan.lib.repoze_plugins.friendly_form:FriendlyFormPlugin
+        login_form_url= /user/login
+        login_handler_path = /login_generic
+        logout_handler_path = /user/logout
+        rememberer_name = auth_tkt
+        post_login_url = /user/logged_in
+        post_logout_url = /user/logged_out
+        charset = utf-8
+
+        [general]
+        request_classifier = repoze.who.classifiers:default_request_classifier
+        challenge_decider = repoze.who.classifiers:default_challenge_decider
+
+        [identifiers]
+        plugins =
+            friendlyform;browser
+            auth_tkt
+
+        [authenticators]
+        plugins =
+            auth_tkt
+            ckan.lib.authenticator:UsernamePasswordAuthenticator
+
+        [challengers]
+        plugins =
+            friendlyform;browser
+    kind: ConfigMap
+    metadata:
+      name: ckan-configfiles
+
+
+
+###########################
 
 
 
