@@ -8,9 +8,9 @@
       autor: "Martin_Fabrizzio_Vilche"
     annotations:
       openshift.io/display-name: "ckan-openshift-mvilche"
-      iconClass: "icon-wildfly"
+      iconClass: "icon-github"
       description: >-
-        Ckan despliegue en openshift
+        CKAN 2.8.2 INTEGRACION OPENSHIFT
         Martin Fabrizzio Vilche.
         https://github.com/mvilche.
 
@@ -54,7 +54,7 @@
           containers:
             - env:
                 - name: POSTGRES_HOST
-                  value: postgres
+                  value: postgresql
                 - name: POSTGRES_PORT
                   value: '5432'
                 - name: POSTGRES_USER
@@ -64,7 +64,7 @@
                 - name: TIMEZONE
                   value: America/Montevideo
                 - name: CKAN_URL
-                  value: http://localhost:8080
+                  value: ${DOMINIO}
                 - name: CKAN_REDIS_URL
                   value: redis://redis:6379/0
                 - name: CKAN_SOLR_URL
@@ -77,13 +77,28 @@
               ports:
                 - containerPort: 5000
                   protocol: TCP
+              livenessProbe:
+                failureThreshold: 3
+                initialDelaySeconds: 60
+                periodSeconds: 20
+                successThreshold: 1
+                httpGet:
+                  port: 5000
+                  path: /
+                timeoutSeconds: 15
+              readinessProbe:
+                failureThreshold: 3
+                initialDelaySeconds: 60
+                periodSeconds: 20
+                successThreshold: 1
+                httpGet:
+                  port: 5000
+                  path: /
+                timeoutSeconds: 15
               resources:
-                requests:
-                  cpu: 500m
-                  memory: 1Gi
                 limits:
                   cpu: 1
-                  memory: 2Gi
+                  memory: 1Gi
               terminationMessagePath: /dev/termination-log
               terminationMessagePolicy: File
               volumeMounts:
@@ -174,6 +189,7 @@
     spec:
       port:
         targetPort: http
+      host: ${DOMINIO}
       to:
         kind: Service
         name: ckan
@@ -228,10 +244,28 @@
               ports:
                 - containerPort: 8800
                   protocol: TCP
+              livenessProbe:
+                failureThreshold: 3
+                initialDelaySeconds: 60
+                periodSeconds: 20
+                successThreshold: 1
+                httpGet:
+                  port: 8800
+                  path: /
+                timeoutSeconds: 15
+              readinessProbe:
+                failureThreshold: 3
+                initialDelaySeconds: 60
+                periodSeconds: 20
+                successThreshold: 1
+                httpGet:
+                  port: 8800
+                  path: /
+                timeoutSeconds: 15
               resources:
                 limits:
-                  cpu: 1
-                  memory: 256Mi
+                  cpu: 500m
+                  memory: 128Mi
               terminationMessagePath: /dev/termination-log
               terminationMessagePolicy: File
           dnsPolicy: ClusterFirst
@@ -273,7 +307,7 @@
         contextDir: pusher
         git:
           ref: master
-          uri: 'https://github.com/mvilche/datapusher-openshift.git'
+          uri: 'https://github.com/mvilche/ckan-openshift.git'
         type: Git
       strategy:
         dockerStrategy:
@@ -468,6 +502,7 @@
                   protocol: TCP
               resources:
                 limits:
+                  cpu: 500m
                   memory: 128Mi
               terminationMessagePath: /dev/termination-log
               terminationMessagePolicy: File
@@ -511,7 +546,7 @@
   - apiVersion: v1
     kind: ImageStream
     metadata:
-        name: nexus
+        name: redis
     spec:
         tags:
           - name: 5.0.5
@@ -538,13 +573,7 @@
       strategy:
         activeDeadlineSeconds: 21600
         resources: {}
-        rollingParams:
-          intervalSeconds: 1
-          maxSurge: 25%
-          maxUnavailable: 25%
-          timeoutSeconds: 600
-          updatePeriodSeconds: 1
-        type: Rolling
+        type: Recreate
       template:
         metadata:
           labels:
@@ -552,21 +581,50 @@
             deploymentconfig: solr
         spec:
           containers:
-            - image: "solr:latest"
+            - env:
+                - name: SOLR_JAVA_MEM
+                  value: "-Dfile.encoding=UTF8 -XX:MaxRAMFraction=1 -XX:+ExitOnOutOfMemoryError -XX:+UnlockExperimentalVMOptions -Djava.net.preferIPv4Stack=true"
+              image: "solr:6.6.5"
               imagePullPolicy: Always
               name: solr
               ports:
                 - containerPort: 8983
                   protocol: TCP
+              livenessProbe:
+                failureThreshold: 3
+                initialDelaySeconds: 60
+                periodSeconds: 20
+                successThreshold: 1
+                httpGet:
+                  port: 8983
+                  path: /solr
+                timeoutSeconds: 15
+              readinessProbe:
+                failureThreshold: 3
+                initialDelaySeconds: 60
+                periodSeconds: 20
+                successThreshold: 1
+                httpGet:
+                  port: 8983
+                  path: /solr
+                timeoutSeconds: 15
               resources:
                 limits:
                   memory: 800Mi
               terminationMessagePath: /dev/termination-log
               terminationMessagePolicy: File
+              volumeMounts:
+                - mountPath: /opt/solr/server/solr/ckan/index
+                  name: solr-1
+                  subPath: solr
           dnsPolicy: ClusterFirst
           restartPolicy: Always
           schedulerName: default-scheduler
           terminationGracePeriodSeconds: 30
+          volumes:
+            - name: solr-1
+              persistentVolumeClaim:
+                claimName: ckan-data
       test: false
       triggers:
         - type: ConfigChange
@@ -576,7 +634,7 @@
               - solr
             from:
               kind: ImageStreamTag
-              name: "solr:latest"
+              name: "solr:6.6.5"
           type: ImageChange
 
 
@@ -594,7 +652,7 @@
       output:
         to:
           kind: ImageStreamTag
-          name: 'solr:latest'
+          name: 'solr:6.6.5'
       postCommit: {}
       resources: {}
       runPolicy: Serial
@@ -602,7 +660,7 @@
         contextDir: solr
         git:
           ref: master
-          uri: 'https://github.com/mvilche/solr-openshift.git'
+          uri: 'https://github.com/mvilche/ckan-openshift.git'
         type: Git
       strategy:
         dockerStrategy:
@@ -659,3 +717,15 @@
           storage: 20Gi
 
 ########################3
+
+
+
+
+################PARAMETROS
+  parameters:
+    - name: DOMINIO
+      displayName: Nombre del dominio publico de acceso a ckan
+      value: ''
+      required: true
+
+###############

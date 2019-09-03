@@ -48,7 +48,7 @@ else
     fi
     paster make-config ckan /opt/src/ckan/config/production.ini && \
     sed -i "/sqlalchemy.url/c\sqlalchemy.url = postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST/\ckan" /opt/src/ckan/config/production.ini && \
-    sed -i "/ckan.site_url/c\ckan.site_url=$CKAN_URL" /opt/src/ckan/config/production.ini && \
+    sed -i "/ckan.site_url/c\ckan.site_url=http://$CKAN_URL" /opt/src/ckan/config/production.ini && \
     sed -i "/ckan.storage_path/c\ckan.storage_path=/opt/src/ckan/data" /opt/src/ckan/config/production.ini && \
     sed -i "/ckan.redis.url/c\ckan.redis.url=$CKAN_REDIS_URL" /opt/src/ckan/config/production.ini && \
     sed -i "/solr_url/c\solr_url=$CKAN_SOLR_URL" /opt/src/ckan/config/production.ini && \
