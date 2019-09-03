@@ -10,4 +10,8 @@ synonyms.txt \
 core.properties \
 /opt/solr/server/solr/ckan/
 RUN cp /opt/solr/server/solr/ckan/schema.xml /opt/solr/server/solr/ckan/conf/ && chown solr:solr -R /opt/solr/server/solr/ckan
-USER solr:solr
+RUN chown -R 8983 /opt && \
+chgrp -R 0 /opt && \
+chmod -R g=u /opt
+EXPOSE 8983
+USER 8983
