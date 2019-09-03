@@ -1,0 +1,61 @@
+version: '3.3'
+services:
+  ckan:
+    build:
+     context: Dockerfiles
+     dockerfile: Dockerfile
+    image: mvilche/ckan:2.8.2
+    depends_on:
+     - redis
+     - postgres
+     - solr
+    ports:
+     - "8080:5000"
+    volumes:
+     - $PWD/ckan:/opt/app/ckan
+    env_file:
+     - Config.env
+    networks:
+     - integracion
+
+  solr:
+    build:
+     context: Dockerfiles/solr
+    image: mvilche/solr:6-alpine-ckan
+    volumes:
+     - solr_data:/opt/solr/server/solr/ckan
+    networks:
+     - integracion
+
+  datapusher:
+    build:
+     context: Dockerfiles/datapusher
+    image: mvilche/datapusher-ckan:0.0.15
+    networks:
+     - integracion
+
+  redis:
+    image: redis
+    networks:
+     - integracion
+
+  postgres:
+    image: postgres:10
+    environment:
+     - POSTGRES_PASSWORD=password
+     - POSTGRES_USER=ckan
+    volumes:
+     - $PWD/database:/var/lib/postgresql/data
+    networks:
+     - integracion
+
+
+networks:
+  integracion:
+      driver: bridge
+      ipam:
+        driver: default
+        config:
+         - subnet: 142.8.0.0/16
+volumes:
+ solr_data:
